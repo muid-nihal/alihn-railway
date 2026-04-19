@@ -22,7 +22,7 @@ WORKDIR /openclaw
 
 # Pin to a known-good ref (tag/branch). Override in Railway template settings if needed.
 # Using a released tag avoids build breakage when `main` temporarily references unpublished packages.
-ARG OPENCLAW_GIT_REF=v2026.3.8
+ARG OPENCLAW_GIT_REF=v2026.4.15
 RUN git clone --depth 1 --branch "${OPENCLAW_GIT_REF}" https://github.com/openclaw/openclaw.git .
 
 # Patch: relax version requirements for packages that may reference unpublished versions.
@@ -75,6 +75,29 @@ COPY --from=openclaw-build /openclaw /openclaw
 # Provide an openclaw executable
 RUN printf '%s\n' '#!/usr/bin/env bash' 'exec node /openclaw/dist/entry.js "$@"' > /usr/local/bin/openclaw \
   && chmod +x /usr/local/bin/openclaw
+
+# --- Alihn branding overlay ---
+# Replace favicons with Alihn star mark
+COPY branding/favicon.svg /openclaw/dist/control-ui/favicon.svg
+COPY branding/favicon-32.png /openclaw/dist/control-ui/favicon-32.png
+COPY branding/favicon.ico /openclaw/dist/control-ui/favicon.ico
+COPY branding/apple-touch-icon.png /openclaw/dist/control-ui/apple-touch-icon.png
+
+# Swap lobster red -> ChatGPT-style black accents in the JS bundle
+RUN find /openclaw/dist/control-ui/assets -name 'index-*.js' -type f -exec sed -i \
+      -e 's/#ff4d4d/#111111/g' \
+      -e 's/#991b1b/#000000/g' {} +
+
+# Rebrand HTML page title
+RUN sed -i 's|<title>OpenClaw Control</title>|<title>Alihn</title>|g' \
+      /openclaw/dist/control-ui/index.html
+
+# Rebrand sidebar wordmark: CONTROL / OpenClaw -> CONTROL / Alihn (minified JS string)
+RUN find /openclaw/dist/control-ui/assets -name 'index-*.js' -type f -exec sed -i \
+      -e 's|"OpenClaw"|"Alihn"|g' \
+      -e "s|'OpenClaw'|'Alihn'|g" \
+      -e 's|`OpenClaw`|`Alihn`|g' {} +
+# --- end Alihn branding overlay ---
 
 COPY src ./src
 
