@@ -77,22 +77,33 @@ RUN printf '%s\n' '#!/usr/bin/env bash' 'exec node /openclaw/dist/entry.js "$@"'
   && chmod +x /usr/local/bin/openclaw
 
 # --- Alihn branding overlay ---
-# Replace favicons with Alihn star mark
+# Replace favicons with Alihn star mark (light + dark variants)
 COPY branding/favicon.svg /openclaw/dist/control-ui/favicon.svg
+COPY branding/favicon-dark.svg /openclaw/dist/control-ui/favicon-dark.svg
 COPY branding/favicon-32.png /openclaw/dist/control-ui/favicon-32.png
+COPY branding/favicon-32-dark.png /openclaw/dist/control-ui/favicon-32-dark.png
 COPY branding/favicon.ico /openclaw/dist/control-ui/favicon.ico
 COPY branding/apple-touch-icon.png /openclaw/dist/control-ui/apple-touch-icon.png
 
-# Swap lobster red -> ChatGPT-style black accents in the JS bundle
-RUN find /openclaw/dist/control-ui/assets -name 'index-*.js' -type f -exec sed -i \
+# Neutralize red accent colors across the entire UI (JS + CSS)
+# Tailwind reds (ef4444/dc2626) + custom reds (ff5c5c/c41e30/e5243b/ff4d4d/991b1b) -> near-black
+RUN find /openclaw/dist/control-ui/assets -type f \( -name 'index-*.js' -o -name 'index-*.css' \) -exec sed -i \
+      -e 's/#ef4444/#111111/g' \
+      -e 's/#dc2626/#000000/g' \
+      -e 's/#ff5c5c/#222222/g' \
+      -e 's/#c41e30/#000000/g' \
+      -e 's/#e5243b/#000000/g' \
       -e 's/#ff4d4d/#111111/g' \
       -e 's/#991b1b/#000000/g' {} +
 
-# Rebrand HTML page title
-RUN sed -i 's|<title>OpenClaw Control</title>|<title>Alihn</title>|g' \
+# Rebrand HTML page title + add dark-mode favicon link
+RUN sed -i \
+      -e 's|<title>OpenClaw Control</title>|<title>Alihn</title>|g' \
+      -e 's|<link rel="icon" type="image/svg+xml" href="./favicon.svg" />|<link rel="icon" type="image/svg+xml" href="./favicon.svg" media="(prefers-color-scheme: light)" />\n    <link rel="icon" type="image/svg+xml" href="./favicon-dark.svg" media="(prefers-color-scheme: dark)" />|g' \
+      -e 's|<link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png" />|<link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png" media="(prefers-color-scheme: light)" />\n    <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32-dark.png" media="(prefers-color-scheme: dark)" />|g' \
       /openclaw/dist/control-ui/index.html
 
-# Rebrand sidebar wordmark: CONTROL / OpenClaw -> CONTROL / Alihn (minified JS string)
+# Rebrand wordmark strings: OpenClaw -> Alihn (quoted in minified JS)
 RUN find /openclaw/dist/control-ui/assets -name 'index-*.js' -type f -exec sed -i \
       -e 's|"OpenClaw"|"Alihn"|g' \
       -e "s|'OpenClaw'|'Alihn'|g" \
