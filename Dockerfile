@@ -76,38 +76,10 @@ COPY --from=openclaw-build /openclaw /openclaw
 RUN printf '%s\n' '#!/usr/bin/env bash' 'exec node /openclaw/dist/entry.js "$@"' > /usr/local/bin/openclaw \
   && chmod +x /usr/local/bin/openclaw
 
-# --- Alihn branding overlay ---
-# Replace favicons with Alihn star mark (light + dark variants)
-COPY branding/favicon.svg /openclaw/dist/control-ui/favicon.svg
-COPY branding/favicon-dark.svg /openclaw/dist/control-ui/favicon-dark.svg
-COPY branding/favicon-32.png /openclaw/dist/control-ui/favicon-32.png
-COPY branding/favicon-32-dark.png /openclaw/dist/control-ui/favicon-32-dark.png
-COPY branding/favicon.ico /openclaw/dist/control-ui/favicon.ico
-COPY branding/apple-touch-icon.png /openclaw/dist/control-ui/apple-touch-icon.png
-
-# Layered CSS overlay that redefines accent/primary/focus vars per theme.
-# This approach respects OpenClaw's theme system (vars theme-switch automatically).
-COPY branding/alihn-overlay.css /openclaw/dist/control-ui/alihn-overlay.css
-
-# Patch inline lobster SVG in JS bundle only (safe — SVG colors are literal)
-RUN find /openclaw/dist/control-ui/assets -name 'index-*.js' -type f -exec sed -i \
-      -e 's/#ff4d4d/#18181b/g' \
-      -e 's/#991b1b/#000000/g' {} +
-
-# HTML patches: page title, favicon media queries, overlay CSS injection
-RUN sed -i \
-      -e 's|<title>OpenClaw Control</title>|<title>Alihn</title>|g' \
-      -e 's|<link rel="icon" type="image/svg+xml" href="./favicon.svg" />|<link rel="icon" type="image/svg+xml" href="./favicon.svg" media="(prefers-color-scheme: light)" />\n    <link rel="icon" type="image/svg+xml" href="./favicon-dark.svg" media="(prefers-color-scheme: dark)" />|g' \
-      -e 's|<link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png" />|<link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png" media="(prefers-color-scheme: light)" />\n    <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32-dark.png" media="(prefers-color-scheme: dark)" />|g' \
-      -e 's|</head>|    <link rel="stylesheet" href="./alihn-overlay.css" />\n  </head>|g' \
-      /openclaw/dist/control-ui/index.html
-
-# Rebrand wordmark strings: OpenClaw -> Alihn (quoted in minified JS)
-RUN find /openclaw/dist/control-ui/assets -name 'index-*.js' -type f -exec sed -i \
-      -e 's|"OpenClaw"|"Alihn"|g' \
-      -e "s|'OpenClaw'|'Alihn'|g" \
-      -e 's|`OpenClaw`|`Alihn`|g' {} +
-# --- end Alihn branding overlay ---
+# Patch: OpenClaw's UI hardcodes "low" as the default thinking level for reasoning models.
+# OpenAI's gpt-5.1-codex rejects "low" and requires "medium" or higher — causing the
+# "Unsupported value: 'low'" 400 error. Override the fallback in the minified UI bundle.
+RUN sed -i 's|reasoning) return "low";|reasoning) return "medium";|g' /openclaw/dist/thinking.shared-*.js
 
 COPY src ./src
 
