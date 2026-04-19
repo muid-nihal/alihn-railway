@@ -1,0 +1,46 @@
+/* Alihn branding overlay
+   Loaded AFTER the built-in CSS. Redefines accent/primary/focus/selected
+   CSS variables per theme so red lobster-dev branding becomes ChatGPT-style
+   neutral. Danger semantics (errors, destructive) intentionally left red. */
+
+/* Light theme: near-black accent on light surfaces */
+html[data-theme="light"],
+html[data-theme="dash-light"],
+html[data-theme="openknot-light"],
+html:not([data-theme-mode="dark"]) {
+  --accent: #18181b;
+  --accent-hover: #27272a;
+  --accent-muted: #3f3f46;
+  --accent-subtle: #e4e4e7;
+  --accent-foreground: #ffffff;
+  --accent-glow: rgba(24, 24, 27, 0.15);
+  --bg-accent: #18181b;
+  --primary: #18181b;
+  --primary-foreground: #ffffff;
+  --focus: #18181b;
+  --focus-glow: rgba(24, 24, 27, 0.25);
+  --focus-ring: #18181b;
+  --chat-focus: #18181b;
+  --selected: #18181b;
+}
+
+/* Dark theme: near-white accent on dark surfaces */
+html[data-theme="dark"],
+html[data-theme="dash"],
+html[data-theme="openknot"],
+html[data-theme-mode="dark"] {
+  --accent: #fafafa;
+  --accent-hover: #e4e4e7;
+  --accent-muted: #a1a1aa;
+  --accent-subtle: #27272a;
+  --accent-foreground: #18181b;
+  --accent-glow: rgba(250, 250, 250, 0.15);
+  --bg-accent: #fafafa;
+  --primary: #fafafa;
+  --primary-foreground: #18181b;
+  --focus: #fafafa;
+  --focus-glow: rgba(250, 250, 250, 0.25);
+  --focus-ring: #fafafa;
+  --chat-focus: #fafafa;
+  --selected: #fafafa;
+}

@@ -85,22 +85,21 @@ COPY branding/favicon-32-dark.png /openclaw/dist/control-ui/favicon-32-dark.png
 COPY branding/favicon.ico /openclaw/dist/control-ui/favicon.ico
 COPY branding/apple-touch-icon.png /openclaw/dist/control-ui/apple-touch-icon.png
 
-# Neutralize red accent colors across the entire UI (JS + CSS)
-# Tailwind reds (ef4444/dc2626) + custom reds (ff5c5c/c41e30/e5243b/ff4d4d/991b1b) -> near-black
-RUN find /openclaw/dist/control-ui/assets -type f \( -name 'index-*.js' -o -name 'index-*.css' \) -exec sed -i \
-      -e 's/#ef4444/#111111/g' \
-      -e 's/#dc2626/#000000/g' \
-      -e 's/#ff5c5c/#222222/g' \
-      -e 's/#c41e30/#000000/g' \
-      -e 's/#e5243b/#000000/g' \
-      -e 's/#ff4d4d/#111111/g' \
+# Layered CSS overlay that redefines accent/primary/focus vars per theme.
+# This approach respects OpenClaw's theme system (vars theme-switch automatically).
+COPY branding/alihn-overlay.css /openclaw/dist/control-ui/alihn-overlay.css
+
+# Patch inline lobster SVG in JS bundle only (safe — SVG colors are literal)
+RUN find /openclaw/dist/control-ui/assets -name 'index-*.js' -type f -exec sed -i \
+      -e 's/#ff4d4d/#18181b/g' \
       -e 's/#991b1b/#000000/g' {} +
 
-# Rebrand HTML page title + add dark-mode favicon link
+# HTML patches: page title, favicon media queries, overlay CSS injection
 RUN sed -i \
       -e 's|<title>OpenClaw Control</title>|<title>Alihn</title>|g' \
       -e 's|<link rel="icon" type="image/svg+xml" href="./favicon.svg" />|<link rel="icon" type="image/svg+xml" href="./favicon.svg" media="(prefers-color-scheme: light)" />\n    <link rel="icon" type="image/svg+xml" href="./favicon-dark.svg" media="(prefers-color-scheme: dark)" />|g' \
       -e 's|<link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png" />|<link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png" media="(prefers-color-scheme: light)" />\n    <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32-dark.png" media="(prefers-color-scheme: dark)" />|g' \
+      -e 's|</head>|    <link rel="stylesheet" href="./alihn-overlay.css" />\n  </head>|g' \
       /openclaw/dist/control-ui/index.html
 
 # Rebrand wordmark strings: OpenClaw -> Alihn (quoted in minified JS)
